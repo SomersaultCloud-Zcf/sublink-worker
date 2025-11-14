@@ -81,7 +81,7 @@ export class SurgeConfigBuilder extends BaseConfigBuilder {
                 }
                 break;
             case 'hysteria2':
-                surgeProxy = `${proxy.tag} = hysteria2, ${proxy.server}, ${proxy.server_port}, password=${proxy.password}`;
+                surgeProxy = `${proxy.tag} = hysteria2, ${proxy.server}, ${proxy.server_port}, password=${proxy.password || proxy.auth}`;
                 if (proxy.tls?.server_name) {
                     surgeProxy += `, sni=${proxy.tls.server_name}`;
                 }
@@ -90,6 +90,21 @@ export class SurgeConfigBuilder extends BaseConfigBuilder {
                 }
                 if (proxy.tls?.alpn) {
                     surgeProxy += `, alpn=${proxy.tls.alpn.join(',')}`;
+                }
+                if (proxy.obfs?.type) {
+                    surgeProxy += `, obfs=${proxy.obfs.type}`;
+                }
+                if (proxy.obfs?.password) {
+                    surgeProxy += `, obfs-password=${proxy.obfs.password}`;
+                }
+                if (proxy.down_mbps) {
+                    surgeProxy += `, download-bandwidth=${proxy.down_mbps}`;
+                }
+                if (proxy.up_mbps) {
+                    surgeProxy += `, upload-bandwidth=${proxy.up_mbps}`;
+                }
+                if (proxy.tls?.utls?.fingerprint) {
+                    surgeProxy += `, ecn=true`;
                 }
                 break;
             case 'tuic':

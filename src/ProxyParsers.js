@@ -168,30 +168,37 @@ export class ProxyParser {
             const parsed = parseServerInfo(addressPart);
             host = parsed.host;
             port = parsed.port;
-            // 如果 URL 中没有 @，则尝试从 params.auth 获取密码
-            password = params.auth;
+            // 如果 URL 中没有 @，则尝试从 params.auth 或 params.password 获取密码
+            password = params.auth || params.password;
           }
       
           const tls = createTlsConfig(params);
 
+          // 处理混淆参数
           const obfs = {};
-          if (params['obfs-password']) {
-            obfs.type = params.obfs;
+          if (params.obfs || params['obfs-password']) {
+            obfs.type = params.obfs || 'salamander';
             obfs.password = params['obfs-password'];
-          };
+          }
       
           return {
             tag: name,
             type: "hysteria2",
             server: host,
             server_port: port,
-            password: password,
+            password: password || params.auth,
             tls: tls,
-            obfs: obfs,
+            obfs: Object.keys(obfs).length > 0 ? obfs : undefined,
             auth: params.auth,
-            recv_window_conn: params.recv_window_conn,
-            up_mbps: params?.upmbps ? parseInt(params.upmbps) : undefined,
-            down_mbps: params?.downmbps ? parseInt(params.downmbps) : undefined
+            // 协议类型: udp, wechat-video, faketcp 等
+            protocol: params.protocol || params.obfs_protocol || 'wechat-video',
+            recv_window_conn: params.recv_window_conn ? parseInt(params.recv_window_conn) : undefined,
+            recv_window: params.recv_window ? parseInt(params.recv_window) : undefined,
+            up_mbps: params.upmbps ? parseInt(params.upmbps) : (params.up ? parseInt(params.up) : undefined),
+            down_mbps: params.downmbps ? parseInt(params.downmbps) : (params.down ? parseInt(params.down) : undefined),
+            // 支持更多参数
+            disable_mtu_discovery: params.disable_mtu_discovery === 'true' || params.disable_mtu_discovery === '1',
+            udp: params.udp !== 'false' && params.udp !== '0'
           };
         }
       }

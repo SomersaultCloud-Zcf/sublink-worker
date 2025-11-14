@@ -1,5 +1,18 @@
 # 更新日志
 
+## 2025-11-14
+
+- 完善 Hysteria2 协议支持
+  - 改进 Hysteria2Parser 解析逻辑,支持更多 URL 格式和参数
+  - 增强 Clash Meta 配置转换,支持混淆、带宽控制、指纹伪装等特性
+  - 增强 Surge 配置转换,支持混淆和带宽配置
+  - 优化 Sing-box 配置输出,自动清理未定义字段
+  - 支持 `hysteria://`、`hysteria2://` 和 `hy2://` 三种协议前缀
+  - 支持混淆(obfs)、带宽控制、接收窗口、MTU发现等高级特性
+  - **修复 OpenClash 兼容性问题**: 默认使用 `wechat-video` 协议,避免连接失败
+  - 支持 `protocol` 参数,可选值: `wechat-video` (默认)、`udp`、`faketcp`
+  - 新增详细的 Hysteria2 支持文档
+
 ## 2025-05-02
 
 - 现在如果存在相同名称的代理，会自动进行重命名([#175](https://github.com/7Sageer/sublink-worker/pull/175))

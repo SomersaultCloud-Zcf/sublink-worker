@@ -83,15 +83,21 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                     type: proxy.type,
                     server: proxy.server,
                     port: proxy.server_port,
-                    obfs: proxy.obfs.type,
-                    'obfs-password': proxy.obfs.password,
-                    password: proxy.password,
+                    password: proxy.password || proxy.auth,
+                    obfs: proxy.obfs?.type,
+                    'obfs-password': proxy.obfs?.password,
                     auth: proxy.auth,
-                    up: proxy.up_mbps,
-                    down: proxy.down_mbps,
+                    // 协议类型，默认为 wechat-video (OpenClash 要求)
+                    protocol: proxy.protocol || 'wechat-video',
+                    up: proxy.up_mbps ? `${proxy.up_mbps} mbps` : undefined,
+                    down: proxy.down_mbps ? `${proxy.down_mbps} mbps` : undefined,
                     'recv-window-conn': proxy.recv_window_conn,
-                    sni: proxy.tls?.server_name || '',
-                    'skip-cert-verify': proxy.tls?.insecure || true,
+                    'recv-window': proxy.recv_window,
+                    'disable-mtu-discovery': proxy.disable_mtu_discovery,
+                    sni: proxy.tls?.server_name || undefined,
+                    'skip-cert-verify': proxy.tls?.insecure !== false,
+                    alpn: proxy.tls?.alpn,
+                    'fingerprint': proxy.tls?.utls?.fingerprint,
                 };
             case 'trojan':
                 return {

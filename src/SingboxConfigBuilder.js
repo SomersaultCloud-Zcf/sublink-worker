@@ -25,7 +25,31 @@ export class SingboxConfigBuilder extends BaseConfigBuilder {
     }
 
     convertProxy(proxy) {
-        return proxy;
+        // Clean up undefined fields for better config output
+        const cleanProxy = JSON.parse(JSON.stringify(proxy, (key, value) => {
+            return value === undefined ? undefined : value;
+        }));
+        
+        // Remove undefined fields
+        Object.keys(cleanProxy).forEach(key => {
+            if (cleanProxy[key] === undefined) {
+                delete cleanProxy[key];
+            }
+        });
+        
+        // Special handling for hysteria2
+        if (proxy.type === 'hysteria2') {
+            // Remove obfs if it's empty or undefined
+            if (cleanProxy.obfs === undefined || Object.keys(cleanProxy.obfs || {}).length === 0) {
+                delete cleanProxy.obfs;
+            }
+            // Remove auth if password is already set
+            if (cleanProxy.password && cleanProxy.auth === cleanProxy.password) {
+                delete cleanProxy.auth;
+            }
+        }
+        
+        return cleanProxy;
     }
 
     addProxyToConfig(proxy) {
