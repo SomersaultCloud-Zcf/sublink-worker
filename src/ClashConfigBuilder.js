@@ -78,27 +78,53 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                     'flow': proxy.flow ?? undefined,
                 };
             case 'hysteria2':
-                return {
+                const hy2Config = {
                     name: proxy.tag,
-                    type: proxy.type,
+                    type: 'hysteria2',
                     server: proxy.server,
                     port: proxy.server_port,
                     password: proxy.password || proxy.auth,
-                    obfs: proxy.obfs?.type,
-                    'obfs-password': proxy.obfs?.password,
-                    auth: proxy.auth,
-                    // 协议类型，默认为 wechat-video (OpenClash 要求)
-                    protocol: proxy.protocol || 'wechat-video',
-                    up: proxy.up_mbps ? `${proxy.up_mbps} mbps` : undefined,
-                    down: proxy.down_mbps ? `${proxy.down_mbps} mbps` : undefined,
-                    'recv-window-conn': proxy.recv_window_conn,
-                    'recv-window': proxy.recv_window,
-                    'disable-mtu-discovery': proxy.disable_mtu_discovery,
-                    sni: proxy.tls?.server_name || undefined,
+                    sni: proxy.tls?.server_name || proxy.server,
                     'skip-cert-verify': proxy.tls?.insecure !== false,
-                    alpn: proxy.tls?.alpn,
-                    'fingerprint': proxy.tls?.utls?.fingerprint,
                 };
+                
+                // 只在有值时添加可选字段
+                if (proxy.obfs?.type) {
+                    hy2Config.obfs = proxy.obfs.type;
+                    if (proxy.obfs.password) {
+                        hy2Config['obfs-password'] = proxy.obfs.password;
+                    }
+                }
+                
+                if (proxy.tls?.alpn) {
+                    hy2Config.alpn = Array.isArray(proxy.tls.alpn) ? proxy.tls.alpn : [proxy.tls.alpn];
+                }
+                
+                if (proxy.tls?.utls?.fingerprint) {
+                    hy2Config.fingerprint = proxy.tls.utls.fingerprint;
+                }
+                
+                if (proxy.up_mbps) {
+                    hy2Config.up = proxy.up_mbps;
+                }
+                
+                if (proxy.down_mbps) {
+                    hy2Config.down = proxy.down_mbps;
+                }
+                
+                if (proxy.recv_window_conn) {
+                    hy2Config['recv-window-conn'] = proxy.recv_window_conn;
+                }
+                
+                if (proxy.recv_window) {
+                    hy2Config['recv-window'] = proxy.recv_window;
+                }
+                
+                if (proxy.disable_mtu_discovery !== undefined) {
+                    hy2Config['disable-mtu-discovery'] = proxy.disable_mtu_discovery;
+                }
+                
+                return hy2Config;
             case 'trojan':
                 return {
                     name: proxy.tag,
@@ -148,13 +174,22 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
 
     addProxyToConfig(proxy) {
         this.config.proxies = this.config.proxies || [];
+        
+        // 首先将 sing-box 格式转换为 Clash 格式
+        const convertedProxy = this.convertProxy(proxy);
+        
+        // 如果转换后没有 name 字段，跳过
+        if (!convertedProxy || !convertedProxy.name) {
+            console.warn('Skipping proxy without name:', proxy);
+            return;
+        }
     
         // Find proxies with the same or partially matching name
-        const similarProxies = this.config.proxies.filter(p => p.name.includes(proxy.name));
+        const similarProxies = this.config.proxies.filter(p => p.name && p.name.includes(convertedProxy.name));
     
         // Check if there is a proxy with identical data excluding the 'name' field
         const isIdentical = similarProxies.some(p => {
-            const { name: _, ...restOfProxy } = proxy; // Exclude the 'name' attribute
+            const { name: _, ...restOfProxy } = convertedProxy; // Exclude the 'name' attribute
             const { name: __, ...restOfP } = p;       // Exclude the 'name' attribute
             return JSON.stringify(restOfProxy) === JSON.stringify(restOfP);
         });
@@ -166,11 +201,11 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
     
         // If there are proxies with similar names but different data, modify the name
         if (similarProxies.length > 0) {
-            proxy.name = `${proxy.name} ${similarProxies.length + 1}`;
+            convertedProxy.name = `${convertedProxy.name} ${similarProxies.length + 1}`;
         }
     
         // Add the proxy to the configuration
-        this.config.proxies.push(proxy);
+        this.config.proxies.push(convertedProxy);
     }
 
     addAutoSelectGroup(proxyList) {

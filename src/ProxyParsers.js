@@ -172,33 +172,48 @@ export class ProxyParser {
             password = params.auth || params.password;
           }
       
-          const tls = createTlsConfig(params);
+          // Hysteria2 总是需要 TLS，确保 TLS 配置正确
+          const tls = {
+            enabled: true,
+            server_name: params.sni || params.peer || host,
+            insecure: params.insecure === '1' || params.insecure === 'true' || params.allowInsecure === '1' || params.allowInsecure === 'true' || params.skipCertVerify === '1' || params.skipCertVerify === 'true',
+          };
+          
+          // 处理 ALPN
+          if (params.alpn) {
+            tls.alpn = Array.isArray(params.alpn) ? params.alpn : params.alpn.split(',');
+          }
+          
+          // 处理指纹
+          if (params.fingerprint) {
+            tls.utls = {
+              enabled: true,
+              fingerprint: params.fingerprint
+            };
+          }
 
           // 处理混淆参数
           const obfs = {};
           if (params.obfs || params['obfs-password']) {
             obfs.type = params.obfs || 'salamander';
-            obfs.password = params['obfs-password'];
+            if (params['obfs-password']) {
+              obfs.password = params['obfs-password'];
+            }
           }
       
           return {
             tag: name,
             type: "hysteria2",
             server: host,
-            server_port: port,
+            server_port: parseInt(port),
             password: password || params.auth,
             tls: tls,
             obfs: Object.keys(obfs).length > 0 ? obfs : undefined,
-            auth: params.auth,
-            // 协议类型: udp, wechat-video, faketcp 等
-            protocol: params.protocol || params.obfs_protocol || 'wechat-video',
             recv_window_conn: params.recv_window_conn ? parseInt(params.recv_window_conn) : undefined,
             recv_window: params.recv_window ? parseInt(params.recv_window) : undefined,
             up_mbps: params.upmbps ? parseInt(params.upmbps) : (params.up ? parseInt(params.up) : undefined),
             down_mbps: params.downmbps ? parseInt(params.downmbps) : (params.down ? parseInt(params.down) : undefined),
-            // 支持更多参数
             disable_mtu_discovery: params.disable_mtu_discovery === 'true' || params.disable_mtu_discovery === '1',
-            udp: params.udp !== 'false' && params.udp !== '0'
           };
         }
       }
